@@ -1,0 +1,167 @@
+openapi: 3.0.3
+info:
+  title: Notes API
+  description: REST API мини-сервиса заметок.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080/api
+    description: Локальный запуск в Docker
+tags:
+  - name: Notes
+paths:
+  /notes:
+    get:
+      tags: [Notes]
+      summary: Список всех заметок
+      operationId: listNotes
+      responses:
+        '200':
+          description: Заметки, отсортированные от новых к старым
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Note'
+    post:
+      tags: [Notes]
+      summary: Создать заметку
+      operationId: createNote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoteInput'
+      responses:
+        '201':
+          description: Заметка создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoteResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /notes/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Идентификатор заметки
+        schema:
+          type: integer
+          format: int64
+          example: 1
+    get:
+      tags: [Notes]
+      summary: Получить заметку
+      operationId: showNote
+      responses:
+        '200':
+          description: Заметка найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoteResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Notes]
+      summary: Изменить заметку
+      operationId: updateNote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoteInput'
+      responses:
+        '200':
+          description: Заметка обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoteResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    delete:
+      tags: [Notes]
+      summary: Удалить заметку
+      operationId: deleteNote
+      responses:
+        '204':
+          description: Заметка удалена
+        '404':
+          $ref: '#/components/responses/NotFound'
+components:
+  schemas:
+    Note:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        title:
+          type: string
+          example: Список покупок
+        content:
+          type: string
+          example: Молоко, хлеб, кофе
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    NoteResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Note'
+    NoteInput:
+      type: object
+      required: [title, content]
+      properties:
+        title:
+          type: string
+          maxLength: 255
+          example: Список покупок
+        content:
+          type: string
+          maxLength: 10000
+          example: Молоко, хлеб, кофе
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+  responses:
+    NotFound:
+      description: Заметка не найдена
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ValidationError:
+      description: Данные не прошли валидацию
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Error'
+              - type: object
+                properties:
+                  errors:
+                    type: object
+                    additionalProperties:
+                      type: array
+                      items:
+                        type: string
+                    example:
+                      title: ["Укажите заголовок заметки."]
